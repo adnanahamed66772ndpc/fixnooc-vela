@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Fixnooc Vela">
+<title>Fixnooc Vela</title>
+	<rect x="0" y="0" width="1024" height="1024" rx="230" fill="#14171C"/>
+	<rect x="2" y="2" width="1020" height="1020" rx="228" fill="none" stroke="#2A2F38" stroke-width="4"/>
+	<g transform="translate(194.56 194.56) scale(6.3488)">
+	<path d="M43 10C65 26 79 48 83 70H43Z" fill="#4C82F7"/>
+	<path d="M35 28V70H17Z" fill="#E6E8EB"/>
+	<rect x="17" y="79" width="66" height="9" rx="4.5" fill="#E6E8EB"/></g>
+</svg>
