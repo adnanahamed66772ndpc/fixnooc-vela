@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 26 282 114" role="img" aria-label="Fixnooc Vela">
+<title>Fixnooc Vela</title>
+	<g transform="translate(-13.15 22.06) scale(1.244)">
+	<path d="M43 10C65 26 79 48 83 70H43Z" fill="#4C82F7"/>
+	<path d="M35 28V70H17Z" fill="#E6E8EB"/>
+	<rect x="17" y="79" width="66" height="9" rx="4.5" fill="#E6E8EB"/></g>
+	<g transform="translate(112.1 21) scale(0.35)" fill="none" stroke="#9AA1AB" stroke-width="8.049999999999999" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M13.5 98V54Q13.5 42 25.5 42H29.5M3.5 62H27.5"/>
+	<path d="M44.5 62V98"/><circle cx="44.5" cy="46" r="0.8"/>
+	<path d="M59.5 62L91.5 98M91.5 62L59.5 98"/>
+	<path d="M106.5 62V98M106.5 78A16 16 0 0 1 138.5 78V98"/>
+	<circle cx="171.5" cy="80" r="18"/>
+	<circle cx="222.5" cy="80" r="18"/>
+	<path d="M287.3 68.4A18 18 0 1 0 287.3 91.6"/></g>
+	<g transform="translate(115.6 30)" fill="none" stroke="#E6E8EB" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M0 62L18 98L36 62"/>
+	<path d="M51 80H87A18 18 0 1 0 82.8 91.6"/>
+	<path d="M103 42V98"/>
+	<circle cx="137" cy="80" r="18"/><path d="M155 62V98"/></g>
+</svg>
