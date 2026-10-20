@@ -231,5 +231,6 @@
 			"type": "light"
 		}
 	],
+	"builtInExtensionsEnabledWithAutoUpdates": [],
 	"sessionsWindowAllowedExtensions": []
 }

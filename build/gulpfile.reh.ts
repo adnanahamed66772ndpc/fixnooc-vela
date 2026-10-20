@@ -359,8 +359,15 @@ function packageTask(type: string, platform: string, arch: string, sourceFolderN
 			.pipe(filter(['**', '!**/package-lock.json', '!**/*.{js,css}.map']))
 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, '.moduleignore')))
 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, `.moduleignore.${process.platform}`)));
-		ensureCopilotPlatformPackage(platform, arch, 'remote/node_modules');
-		const copilotRuntimePrebuilds = gulp.src(getCopilotRuntimePrebuildFiles(platform, arch, 'remote/node_modules'), { base: 'remote', dot: true, allowEmpty: true });
+		// Vela ships without the built-in Copilot extension, so the SDK's platform
+		// natives have nothing to serve and are left out of the server build.
+		const hasCopilotExtension = fs.existsSync(path.join(REPO_ROOT, 'extensions', 'copilot'));
+		if (hasCopilotExtension) {
+			ensureCopilotPlatformPackage(platform, arch, 'remote/node_modules');
+		}
+		const copilotRuntimePrebuilds = hasCopilotExtension
+			? gulp.src(getCopilotRuntimePrebuildFiles(platform, arch, 'remote/node_modules'), { base: 'remote', dot: true, allowEmpty: true })
+			: es.readArray([]);
 		const deps = es.merge(cleanedDeps, copilotRuntimePrebuilds)
 			.pipe(filter(getCopilotExcludeFilter(platform, arch)))
 			.pipe(filter(getCopilotTgrepExcludeFilter(platform, arch)))
@@ -526,6 +533,11 @@ function prepareCopilotRipgrepShimTaskREH(platform: string, arch: string, destin
 		const nodeModulesDir = path.join(outputDir, 'node_modules');
 
 		const builtInCopilotExtensionDir = path.join(outputDir, 'extensions', 'copilot');
+		if (!fs.existsSync(builtInCopilotExtensionDir)) {
+			// Vela ships without the built-in Copilot extension, so there is no shim to prepare.
+			return;
+		}
+
 		prepareBuiltInCopilotRipgrepShim(platform, arch, builtInCopilotExtensionDir, nodeModulesDir);
 	};
 }
