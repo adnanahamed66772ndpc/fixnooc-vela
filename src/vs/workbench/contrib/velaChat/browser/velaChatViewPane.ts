@@ -25,14 +25,19 @@ import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultS
 import { ViewPane } from '../../../browser/parts/views/viewPane.js';
 import { IViewletViewOptions } from '../../../browser/parts/views/viewsViewlet.js';
 import { IViewDescriptorService } from '../../../common/views.js';
-import { IVelaChatMessage, IVelaChatService, VelaChatError } from '../common/velaChat.js';
+import { IVelaChatMessage, IVelaChatService, VelaChatError, VelaChatSettings } from '../common/velaChat.js';
 
 /** One turn as it appears on screen; `text` grows while a reply streams in. */
 interface ITurn {
 	readonly role: 'user' | 'assistant';
 	text: string;
+	thoughts: string;
+	/** Tool titles in the order the agent ran them, newest last. */
+	readonly activity: string[];
 	element?: HTMLElement;
 	body?: HTMLElement;
+	thoughtsElement?: HTMLElement;
+	activityElement?: HTMLElement;
 }
 
 export class VelaChatViewPane extends ViewPane {
@@ -40,6 +45,8 @@ export class VelaChatViewPane extends ViewPane {
 	static readonly ID = 'workbench.view.velaChat';
 
 	private turns: ITurn[] = [];
+	/** The agent session these turns belong to, so each turn continues the last. */
+	private sessionId: string | undefined;
 	private transcript!: HTMLElement;
 	private input!: HTMLTextAreaElement;
 	private status!: HTMLElement;
@@ -131,9 +138,9 @@ export class VelaChatViewPane extends ViewPane {
 		}
 
 		this.input.value = '';
-		this.addTurn({ role: 'user', text });
+		this.addTurn({ role: 'user', text, thoughts: '', activity: [] });
 
-		const reply: ITurn = { role: 'assistant', text: '' };
+		const reply: ITurn = { role: 'assistant', text: '', thoughts: '', activity: [] };
 		this.addTurn(reply);
 
 		const source = new CancellationTokenSource();
@@ -145,13 +152,35 @@ export class VelaChatViewPane extends ViewPane {
 				.filter(turn => turn !== reply && turn.text)
 				.map(turn => ({ role: turn.role, content: turn.text }));
 
-			for await (const chunk of this.chatService.chat({ messages: history }, source.token)) {
-				reply.text += chunk.text;
+			for await (const chunk of this.chatService.chat({ messages: history, sessionId: this.sessionId }, source.token)) {
+				switch (chunk.kind) {
+					case 'text':
+						reply.text += chunk.text;
+						break;
+					case 'thought':
+						reply.thoughts += chunk.text;
+						break;
+					case 'tool':
+						// A tool reports in_progress then completed; keep one line per call.
+						if (chunk.title && reply.activity.at(-1) !== chunk.title) {
+							reply.activity.push(chunk.title);
+						}
+						break;
+					case 'permission':
+						reply.activity.push(chunk.approved
+							? localize('velaChat.allowed', "allowed {0}", chunk.title ?? '')
+							: localize('velaChat.refused', "refused {0}", chunk.title ?? ''));
+						break;
+					case 'session':
+						this.sessionId = chunk.sessionId;
+						this.status.textContent = localize('velaChat.connected', "{0} · session open", chunk.agent ?? 'agent');
+						break;
+				}
 				this.scheduleRender(reply);
 			}
 
 			if (!reply.text) {
-				reply.text = localize('velaChat.empty', "_The model returned nothing._");
+				reply.text = localize('velaChat.empty', "_The agent finished without a reply._");
 			}
 		} catch (error) {
 			reply.text = error instanceof VelaChatError
@@ -187,6 +216,10 @@ export class VelaChatViewPane extends ViewPane {
 		append(turn.element, $('.vela-chat-role', undefined, turn.role === 'user'
 			? localize('velaChat.you', "You")
 			: localize('velaChat.vela', "Vela")));
+		if (turn.role === 'assistant') {
+			turn.activityElement = append(turn.element, $('.vela-chat-activity'));
+			turn.thoughtsElement = append(turn.element, $('.vela-chat-thoughts'));
+		}
 		turn.body = append(turn.element, $('.vela-chat-body'));
 
 		this.renderTurn(turn);
@@ -216,6 +249,21 @@ export class VelaChatViewPane extends ViewPane {
 			return;
 		}
 
+		if (turn.activityElement) {
+			clearNode(turn.activityElement);
+			for (const entry of turn.activity) {
+				append(turn.activityElement, $('.vela-chat-activity-item', undefined, entry));
+			}
+		}
+
+		if (turn.thoughtsElement) {
+			clearNode(turn.thoughtsElement);
+			const show = this.configurationService.getValue<boolean>(VelaChatSettings.ShowThoughts);
+			if (show && turn.thoughts) {
+				append(turn.thoughtsElement, $('.vela-chat-thoughts-text', undefined, turn.thoughts));
+			}
+		}
+
 		clearNode(turn.body);
 		if (!turn.text) {
 			return;
@@ -232,7 +280,7 @@ export class VelaChatViewPane extends ViewPane {
 	private renderEmptyState(): void {
 		const empty = append(this.transcript, $('.vela-chat-empty'));
 		append(empty, $('h3', undefined, localize('velaChat.welcomeTitle', "Vela Chat")));
-		append(empty, $('p', undefined, localize('velaChat.welcomeBody', "Ask a question about your code. The model is chosen to match how much work the question is.")));
+		append(empty, $('p', undefined, localize('velaChat.welcomeBody', "Ask the agent to explain, change or run something. It works in this folder, and what it does appears above each reply.")));
 	}
 
 	private scrollToEnd(): void {

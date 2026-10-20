@@ -10,11 +10,15 @@ export const VELA_CHAT_VIEW_ID = 'workbench.view.velaChat';
 export const VELA_CHAT_CONTAINER_ID = 'workbench.view.velaChatContainer';
 
 export const enum VelaChatSettings {
+	Backend = 'velaChat.backend',
 	Endpoint = 'velaChat.endpoint',
 	Model = 'velaChat.model',
-	SystemPrompt = 'velaChat.systemPrompt',
-	IncludeActiveFile = 'velaChat.includeActiveFile',
+	ReasoningEffort = 'velaChat.reasoningEffort',
+	ShowThoughts = 'velaChat.showThoughts',
 }
+
+/** `dsh` drives DeepSeek Harness as an agent; `openai` is a plain completions endpoint. */
+export type VelaChatBackend = 'dsh' | 'openai';
 
 export type VelaChatRole = 'user' | 'assistant' | 'system';
 
@@ -25,13 +29,51 @@ export interface IVelaChatMessage {
 
 export interface IVelaChatRequest {
 	readonly messages: readonly IVelaChatMessage[];
+	/** The agent session to continue. Omit to have the backend open one. */
+	readonly sessionId?: string;
 	readonly model?: string;
 }
 
-/** Streamed back as the reply arrives, one chunk of text at a time. */
-export interface IVelaChatResponseChunk {
+/** Reply text to show. */
+export interface IVelaChatTextChunk {
+	readonly kind: 'text';
 	readonly text: string;
 }
+
+/** The agent's reasoning, shown separately and only when asked for. */
+export interface IVelaChatThoughtChunk {
+	readonly kind: 'thought';
+	readonly text: string;
+}
+
+/** A tool the agent ran: an edit, a command, a search. */
+export interface IVelaChatToolChunk {
+	readonly kind: 'tool';
+	readonly id?: string;
+	readonly title?: string;
+	readonly status?: string;
+}
+
+/** A permission the backend answered on the agent's behalf. */
+export interface IVelaChatPermissionChunk {
+	readonly kind: 'permission';
+	readonly approved: boolean;
+	readonly title?: string;
+}
+
+/** The session this turn belongs to, so later turns can continue it. */
+export interface IVelaChatSessionChunk {
+	readonly kind: 'session';
+	readonly sessionId: string;
+	readonly agent?: string;
+}
+
+export type VelaChatChunk =
+	| IVelaChatTextChunk
+	| IVelaChatThoughtChunk
+	| IVelaChatToolChunk
+	| IVelaChatPermissionChunk
+	| IVelaChatSessionChunk;
 
 export const IVelaChatService = createDecorator<IVelaChatService>('velaChatService');
 
@@ -39,10 +81,10 @@ export interface IVelaChatService {
 	readonly _serviceBrand: undefined;
 
 	/**
-	 * Sends a conversation and yields the reply as it streams in. Throws
-	 * {@link VelaChatError} when the endpoint is unreachable or rejects the request.
+	 * Sends a turn and yields what comes back as it arrives. Throws
+	 * {@link VelaChatError} when the backend is unreachable or rejects the turn.
 	 */
-	chat(request: IVelaChatRequest, token: CancellationToken): AsyncIterable<IVelaChatResponseChunk>;
+	chat(request: IVelaChatRequest, token: CancellationToken): AsyncIterable<VelaChatChunk>;
 }
 
 /** An error worth showing the user verbatim, rather than a stack trace. */

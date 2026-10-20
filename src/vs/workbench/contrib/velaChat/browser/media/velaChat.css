@@ -151,3 +151,35 @@
 	width: auto;
 	padding: 3px 14px;
 }
+
+/* What the agent did on this turn: tool calls and permission decisions. */
+.vela-chat-activity {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: 6px;
+}
+
+.vela-chat-activity-item {
+	padding-left: 12px;
+	font-size: 11.5px;
+	line-height: 1.5;
+	color: var(--vscode-descriptionForeground);
+	border-left: 2px solid var(--vscode-panel-border);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.vela-chat-thoughts-text {
+	display: block;
+	margin-bottom: 8px;
+	padding: 6px 9px;
+	font-size: 12px;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	color: var(--vscode-descriptionForeground);
+	background-color: var(--vscode-textBlockQuote-background);
+	border-radius: 4px;
+	opacity: 0.85;
+}

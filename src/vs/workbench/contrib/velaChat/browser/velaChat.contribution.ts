@@ -51,10 +51,41 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).regis
 	title: localize('velaChat.configuration', "Vela Chat"),
 	type: 'object',
 	properties: {
+		[VelaChatSettings.Backend]: {
+			type: 'string',
+			default: 'dsh',
+			enum: ['dsh', 'openai'],
+			enumDescriptions: [
+				localize('velaChat.backend.dsh', "Drive DeepSeek Harness as an agent: it can read, change and run things in the workspace."),
+				localize('velaChat.backend.openai', "Send the conversation to an OpenAI-compatible completions endpoint, which only replies with text."),
+			],
+			markdownDescription: localize('velaChat.backend.description', "Which backend answers. Leave `#velaChat.endpoint#` empty to use each backend's default path."),
+			scope: ConfigurationScope.APPLICATION,
+		},
+		[VelaChatSettings.ReasoningEffort]: {
+			type: 'string',
+			default: '',
+			enum: ['', 'off', 'low', 'high', 'max'],
+			enumDescriptions: [
+				localize('velaChat.effort.default', "Leave the agent's own default in place."),
+				localize('velaChat.effort.off', "No reasoning; for simple tasks."),
+				localize('velaChat.effort.low', "For routine or latency-sensitive tasks."),
+				localize('velaChat.effort.high', "The usual balance."),
+				localize('velaChat.effort.max', "For the hardest tasks, at the cost of speed."),
+			],
+			markdownDescription: localize('velaChat.effort.description', "How hard the agent should think. Applies to the `dsh` backend only."),
+			scope: ConfigurationScope.APPLICATION,
+		},
+		[VelaChatSettings.ShowThoughts]: {
+			type: 'boolean',
+			default: false,
+			markdownDescription: localize('velaChat.showThoughts.description', "Show the agent's reasoning above each reply. Applies to the `dsh` backend only."),
+			scope: ConfigurationScope.APPLICATION,
+		},
 		[VelaChatSettings.Endpoint]: {
 			type: 'string',
-			default: '/vela-chat/completions',
-			markdownDescription: localize('velaChat.endpoint.description', "Where chat requests are sent. The default is relative, so it goes to whatever serves Vela and the API key stays there rather than in the browser. An absolute URL must accept an OpenAI-compatible `POST /chat/completions` with `stream: true`."),
+			default: '',
+			markdownDescription: localize('velaChat.endpoint.description', "Where turns are sent. Empty uses the chosen backend's default path, which is relative so it reaches whatever serves Vela and the API key stays there instead of in the browser."),
 			scope: ConfigurationScope.APPLICATION,
 		},
 		[VelaChatSettings.Model]: {

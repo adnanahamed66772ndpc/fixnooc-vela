@@ -18,6 +18,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { connect as netConnect } from 'node:net';
 import { chatConfigFromEnv, handleChatCompletions } from './chat-route.mjs';
+import { DshBridge, dshConfigFromEnv } from './dsh-bridge.mjs';
+import { handleDshPrompt } from './dsh-route.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 
@@ -37,6 +39,7 @@ const config = {
 };
 
 const chatConfig = chatConfigFromEnv(process.env);
+const dshBridge = new DshBridge(dshConfigFromEnv(process.env), message => console.log(message));
 
 const COOKIE = 'vela_session';
 const MAX_ATTEMPTS = 8;
@@ -90,6 +93,19 @@ const server = createServer((req, res) => {
 	}
 
 	// Signed in from here on, so the chat backend's keys never leave this process.
+	if (url.pathname === '/vela-chat/dsh') {
+		handleDshPrompt(req, res, dshBridge, message => console.log(message))
+			.catch(err => {
+				console.error(`[vela-dsh] unhandled: ${err.message}`);
+				if (!res.headersSent) {
+					send(res, 500, 'text/plain; charset=utf-8', 'Internal Server Error');
+				} else {
+					res.destroy();
+				}
+			});
+		return;
+	}
+
 	if (url.pathname === '/vela-chat/completions') {
 		handleChatCompletions(req, res, chatConfig, message => console.log(message))
 			.catch(err => {
@@ -115,6 +131,13 @@ server.on('upgrade', (req, socket, head) => {
 	proxyUpgrade(req, socket, head);
 });
 
+for (const signal of ['SIGINT', 'SIGTERM']) {
+	process.on(signal, () => {
+		dshBridge.dispose();
+		process.exit(0);
+	});
+}
+
 server.on('clientError', (_err, socket) => {
 	if (socket.writable) {
 		socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
@@ -124,6 +147,11 @@ server.on('clientError', (_err, socket) => {
 server.listen(config.port, config.host, () => {
 	console.log(`[vela-web] listening on http://${config.host}:${config.port}`);
 	console.log(`[vela-web] proxying to http://${config.upstreamHost}:${config.upstreamPort}`);
+	if (dshBridge.configured) {
+		console.log('[vela-web] DSH agent: /vela-chat/dsh');
+	} else {
+		console.log('[vela-web] DSH not configured — /vela-chat/dsh will answer 503');
+	}
 	if (chatConfig.llmBaseUrl) {
 		console.log(`[vela-web] chat backend: ${chatConfig.llmBaseUrl}`
 			+ (chatConfig.router.apiKey ? ' (Jev routing on)' : ' (Jev routing off, no TYPESAFE_API_KEY)'));
