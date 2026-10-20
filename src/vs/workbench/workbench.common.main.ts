@@ -484,4 +484,10 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 // Opener
 import './contrib/opener/browser/opener.contribution.js';
 
+//#region --- vela chat
+
+import './contrib/velaChat/browser/velaChat.contribution.js';
+
+//#endregion
+
 //#endregion
