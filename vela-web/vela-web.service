@@ -1,0 +1,22 @@
+# Vela Web as a user service:
+#   mkdir -p ~/.config/systemd/user
+#   cp vela-web/vela-web.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now vela-web
+#   sudo loginctl enable-linger $USER     # keeps it running after you log out
+[Unit]
+Description=Vela Web (editor + authenticating gateway)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/fixnooc-vela
+ExecStart=%h/fixnooc-vela/vela-web/start.sh
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=20
+StandardOutput=append:%h/.vela-web.log
+StandardError=append:%h/.vela-web.log
+
+[Install]
+WantedBy=default.target

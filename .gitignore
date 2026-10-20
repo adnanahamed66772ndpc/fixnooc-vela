@@ -55,3 +55,6 @@ dist
 .v[0-9]*/
 # Local agent validation evidence
 .agent-validation/
+
+# Vela Web gateway secrets
+vela-web/.env
