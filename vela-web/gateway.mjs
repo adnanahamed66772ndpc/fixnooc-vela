@@ -17,6 +17,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { connect as netConnect } from 'node:net';
+import { chatConfigFromEnv, handleChatCompletions } from './chat-route.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,8 @@ const config = {
 	secureCookie: process.env.VELA_SECURE_COOKIE === 'true',
 	trustProxy: process.env.VELA_TRUST_PROXY === 'true',
 };
+
+const chatConfig = chatConfigFromEnv(process.env);
 
 const COOKIE = 'vela_session';
 const MAX_ATTEMPTS = 8;
@@ -86,6 +89,20 @@ const server = createServer((req, res) => {
 		return send(res, 401, 'text/plain; charset=utf-8', 'Unauthorized');
 	}
 
+	// Signed in from here on, so the chat backend's keys never leave this process.
+	if (url.pathname === '/vela-chat/completions') {
+		handleChatCompletions(req, res, chatConfig, message => console.log(message))
+			.catch(err => {
+				console.error(`[vela-chat] unhandled: ${err.message}`);
+				if (!res.headersSent) {
+					send(res, 500, 'text/plain; charset=utf-8', 'Internal Server Error');
+				} else {
+					res.destroy();
+				}
+			});
+		return;
+	}
+
 	proxyRequest(req, res);
 });
 
@@ -107,6 +124,12 @@ server.on('clientError', (_err, socket) => {
 server.listen(config.port, config.host, () => {
 	console.log(`[vela-web] listening on http://${config.host}:${config.port}`);
 	console.log(`[vela-web] proxying to http://${config.upstreamHost}:${config.upstreamPort}`);
+	if (chatConfig.llmBaseUrl) {
+		console.log(`[vela-web] chat backend: ${chatConfig.llmBaseUrl}`
+			+ (chatConfig.router.apiKey ? ' (Jev routing on)' : ' (Jev routing off, no TYPESAFE_API_KEY)'));
+	} else {
+		console.log('[vela-web] chat backend not configured — /vela-chat/completions will answer 503');
+	}
 	if (!config.secureCookie) {
 		console.warn('[vela-web] cookies are not Secure — put TLS in front before using this over the internet');
 	}
