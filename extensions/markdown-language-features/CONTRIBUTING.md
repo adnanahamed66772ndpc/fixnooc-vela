@@ -182,9 +182,7 @@ Additional Markdown features in vscode are split across several built-in extensi
 
 - [`markdown-math`](../markdown-math) — KaTeX math rendering in the preview.
 
-- [`mermaid-markdown-features`](../mermaid-markdown-features) — Mermaid diagram rendering in the preview.
-
-The latter two extensions build on top of our Markdown extension api using the same mechanism is available to third-party extensions:
+The `markdown-math` extension builds on top of our Markdown extension api using the same mechanism is available to third-party extensions:
 
 - `markdown.markdownItPlugins` — register a [markdown-it](https://github.com/markdown-it/markdown-it) plugin to extend how Markdown is parsed and rendered.
 - `markdown.previewScripts` — add scripts that run inside the preview webview.
